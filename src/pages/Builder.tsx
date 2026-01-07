@@ -23,6 +23,7 @@ import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { FontSwitcher } from '@/components/FontSwitcher';
+import { TemplateSwitcher } from '@/components/TemplateSwitcher';
 import { BuilderProgress } from '@/components/BuilderProgress';
 import { ResumeScore } from '@/components/ResumeScore';
 import { ContentWarnings } from '@/components/ContentWarnings';
@@ -33,7 +34,7 @@ import { Badge } from '@/components/ui/badge';
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { resumeFont } = useTheme();
+  const { resumeFont, resumeTemplate, setResumeTemplate } = useTheme();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -144,12 +145,13 @@ const Builder = () => {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <TemplateSwitcher template={resumeTemplate} onTemplateChange={setResumeTemplate} />
             <FontSwitcher />
             <Sheet>
               <SheetTrigger asChild><Button variant="outline" size="sm" className="lg:hidden"><Eye className="h-4 w-4 mr-1" />Preview</Button></SheetTrigger>
               <SheetContent side="right" className="w-full sm:max-w-xl overflow-auto p-0">
                 <SheetHeader className="p-4 border-b"><SheetTitle>Resume Preview</SheetTitle></SheetHeader>
-                <div className="p-4"><div className="shadow-lg rounded-lg overflow-hidden border"><ResumePreview content={resume.content} title={resume.title} fontFamily={resumeFont} /></div></div>
+                <div className="p-4"><div className="shadow-lg rounded-lg overflow-hidden border"><ResumePreview content={resume.content} title={resume.title} fontFamily={resumeFont} template={resumeTemplate} /></div></div>
               </SheetContent>
             </Sheet>
             <Button variant="outline" size="sm" onClick={saveResume} disabled={saving || !hasChanges}>
@@ -192,7 +194,7 @@ const Builder = () => {
             <Card className="overflow-hidden">
               <CardHeader className="bg-muted/50 py-3"><CardTitle className="text-sm font-medium text-muted-foreground">Live Preview</CardTitle></CardHeader>
               <CardContent className="p-0 max-h-[calc(100vh-180px)] overflow-auto">
-                <div className="transform scale-[0.7] origin-top-left w-[142.85%]"><ResumePreview content={resume.content} title={resume.title} fontFamily={resumeFont} /></div>
+                <div className="transform scale-[0.7] origin-top-left w-[142.85%]"><ResumePreview content={resume.content} title={resume.title} fontFamily={resumeFont} template={resumeTemplate} /></div>
               </CardContent>
             </Card>
           </div>

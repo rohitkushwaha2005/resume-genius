@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { ResumeTemplate } from '@/components/resume/ResumePreview';
 
 type Theme = 'light' | 'dark';
 type ResumeFont = 'inter' | 'georgia' | 'merriweather';
@@ -8,6 +9,8 @@ interface ThemeContextType {
   toggleTheme: () => void;
   resumeFont: ResumeFont;
   setResumeFont: (font: ResumeFont) => void;
+  resumeTemplate: ResumeTemplate;
+  setResumeTemplate: (template: ResumeTemplate) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -29,6 +32,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return 'inter';
   });
 
+  const [resumeTemplate, setResumeTemplateState] = useState<ResumeTemplate>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('resumeTemplate') as ResumeTemplate) || 'modern';
+    }
+    return 'modern';
+  });
+
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
@@ -40,6 +50,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('resumeFont', resumeFont);
   }, [resumeFont]);
 
+  useEffect(() => {
+    localStorage.setItem('resumeTemplate', resumeTemplate);
+  }, [resumeTemplate]);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
@@ -48,8 +62,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setResumeFontState(font);
   };
 
+  const setResumeTemplate = (template: ResumeTemplate) => {
+    setResumeTemplateState(template);
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, resumeFont, setResumeFont }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, resumeFont, setResumeFont, resumeTemplate, setResumeTemplate }}>
       {children}
     </ThemeContext.Provider>
   );

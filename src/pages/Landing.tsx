@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { FileText, Sparkles, Download, Zap, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import resumeHeroImage from '@/assets/resume-hero.png';
 
 const Landing = () => {
   const { user } = useAuth();
@@ -48,6 +50,7 @@ const Landing = () => {
             <span className="font-display text-xl font-bold text-foreground">ResumeAI</span>
           </Link>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             {user ? (
               <Link to="/dashboard">
                 <Button>Go to Dashboard</Button>
@@ -124,7 +127,7 @@ const Landing = () => {
             {features.map((feature, index) => (
               <div
                 key={feature.title}
-                className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
+                className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 animate-fade-in"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-accent-foreground transition-colors group-hover:gradient-primary group-hover:text-primary-foreground">
@@ -145,7 +148,7 @@ const Landing = () => {
       {/* Benefits Section */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-4xl">
+          <div className="mx-auto max-w-5xl">
             <div className="grid gap-12 md:grid-cols-2 md:items-center">
               <div>
                 <h2 className="mb-6 font-display text-3xl font-bold text-foreground md:text-4xl">
@@ -163,11 +166,13 @@ const Landing = () => {
                   ))}
                 </ul>
               </div>
-              <div className="relative">
-                <div className="aspect-square rounded-3xl gradient-primary p-1 shadow-glow">
-                  <div className="flex h-full w-full items-center justify-center rounded-[calc(1.5rem-4px)] bg-card">
-                    <FileText className="h-24 w-24 text-primary opacity-20" />
-                  </div>
+              <div className="relative animate-float">
+                <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl shadow-primary/20">
+                  <img 
+                    src={resumeHeroImage} 
+                    alt="AI-powered resume builder illustration" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
             </div>
