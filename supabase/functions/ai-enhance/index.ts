@@ -57,6 +57,63 @@ They already have these skills: ${context.existingSkills?.join(", ") || "None li
 Suggest 5-8 additional relevant skills they should add. Return as JSON: {"skills": ["skill1", "skill2", ...]}`;
         break;
 
+      case "analyze-resume":
+        systemPrompt = `You are an expert ATS (Applicant Tracking System) and resume consultant. Analyze the resume content and provide:
+1. An ATS compatibility score from 0-100
+2. 2-3 key strengths of the resume
+3. 2-3 areas that need improvement
+4. 2-3 specific, actionable suggestions
+
+Return ONLY a JSON object with this structure:
+{
+  "score": number,
+  "strengths": ["strength1", "strength2"],
+  "weaknesses": ["weakness1", "weakness2"],
+  "suggestions": ["suggestion1", "suggestion2"]
+}
+
+Scoring guidelines:
+- 80-100: Excellent - well-structured, keyword-rich, quantified achievements
+- 60-79: Good - solid content but room for improvement
+- 40-59: Fair - missing key elements or poor formatting
+- 0-39: Needs work - significant improvements needed`;
+        userPrompt = `Analyze this resume for ATS compatibility and overall effectiveness:
+
+Personal Info: ${context.personalInfo?.fullName || "Not provided"}
+Has Summary: ${context.hasSummary ? "Yes" : "No"}
+Experience Entries: ${context.experienceCount}
+Education Entries: ${context.educationCount}
+Skills Count: ${context.skillsCount}
+Has Projects: ${context.hasProjects ? "Yes" : "No"}
+
+Full Resume Content:
+${content}
+
+Provide your analysis as JSON.`;
+        break;
+
+      case "optimize-for-jd":
+        systemPrompt = `You are a resume optimization expert. Given a job description, optimize the resume content to better match the role.
+Keep content truthful and professional. Focus on highlighting relevant experience and using matching keywords.
+Return ONLY a JSON object with optimized content:
+{
+  "summary": "optimized professional summary",
+  "skills": ["skill1", "skill2", ...]
+}
+
+The summary should be 2-4 sentences tailored to the job.
+The skills should include relevant skills from the job description that the candidate could reasonably have.`;
+        userPrompt = `Job Description:
+${content}
+
+Current Resume:
+Summary: ${context.currentSummary || "No summary"}
+Skills: ${context.currentSkills?.join(", ") || "No skills listed"}
+Experience: ${JSON.stringify(context.currentExperience?.slice(0, 2) || [])}
+
+Optimize the summary and suggest skills that align with this job description. Return as JSON.`;
+        break;
+
       default:
         throw new Error("Invalid enhancement type");
     }
@@ -110,13 +167,11 @@ Suggest 5-8 additional relevant skills they should add. Return as JSON: {"skills
 
       case "suggest-skills":
         try {
-          // Try to parse JSON from the response
           const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
             result = { skills: parsed.skills || [] };
           } else {
-            // Fallback: split by newlines or commas
             const skills = aiContent
               .split(/[\n,]/)
               .map((s: string) => s.replace(/^[-•*\d.)\s]+/, "").trim())
@@ -125,6 +180,52 @@ Suggest 5-8 additional relevant skills they should add. Return as JSON: {"skills
           }
         } catch {
           result = { skills: [] };
+        }
+        break;
+
+      case "analyze-resume":
+        try {
+          const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            result = {
+              score: Math.min(100, Math.max(0, parsed.score || 50)),
+              strengths: parsed.strengths || [],
+              weaknesses: parsed.weaknesses || [],
+              suggestions: parsed.suggestions || [],
+            };
+          } else {
+            result = {
+              score: 50,
+              strengths: ["Resume submitted for analysis"],
+              weaknesses: ["Unable to parse detailed feedback"],
+              suggestions: ["Try re-analyzing after making updates"],
+            };
+          }
+        } catch {
+          result = {
+            score: 50,
+            strengths: ["Resume content detected"],
+            weaknesses: ["Analysis parsing failed"],
+            suggestions: ["Please try again"],
+          };
+        }
+        break;
+
+      case "optimize-for-jd":
+        try {
+          const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            result = {
+              summary: parsed.summary || "",
+              skills: parsed.skills || [],
+            };
+          } else {
+            result = { summary: "", skills: [] };
+          }
+        } catch {
+          result = { summary: "", skills: [] };
         }
         break;
     }

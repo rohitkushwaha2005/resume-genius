@@ -1,16 +1,41 @@
 import { ResumeContent } from '@/types/resume';
 import { Mail, Phone, Linkedin, MapPin, ExternalLink } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ResumePreviewProps {
   content: ResumeContent;
   title: string;
+  fontFamily?: 'inter' | 'georgia' | 'merriweather';
 }
 
-export const ResumePreview: React.FC<ResumePreviewProps> = ({ content, title }) => {
+const fontClasses = {
+  inter: 'font-sans',
+  georgia: 'font-serif',
+  merriweather: 'font-serif',
+};
+
+export const ResumePreview: React.FC<ResumePreviewProps> = ({ 
+  content, 
+  title, 
+  fontFamily = 'inter' 
+}) => {
   const { personalInfo, summary, education, experience, projects, skills } = content;
 
   return (
-    <div id="resume-preview" className="bg-white text-gray-900 p-8 min-h-[1056px] font-sans text-sm">
+    <div 
+      id="resume-preview" 
+      className={cn(
+        "bg-white text-gray-900 p-8 min-h-[1056px] text-sm",
+        fontClasses[fontFamily]
+      )}
+      style={{
+        fontFamily: fontFamily === 'inter' 
+          ? 'Inter, system-ui, sans-serif' 
+          : fontFamily === 'georgia'
+          ? 'Georgia, serif'
+          : 'Merriweather, Georgia, serif'
+      }}
+    >
       {/* Header */}
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">

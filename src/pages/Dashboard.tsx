@@ -27,6 +27,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { RoleSelector, ResumeRole } from '@/components/RoleSelector';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -35,6 +37,7 @@ const Dashboard = () => {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
 
   useEffect(() => {
     fetchResumes();
@@ -49,7 +52,6 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      // Transform the data to match our Resume type
       const transformedResumes: Resume[] = (data || []).map((resume: any) => ({
         ...resume,
         content: resume.content as ResumeContent,
@@ -68,10 +70,10 @@ const Dashboard = () => {
     }
   };
 
-  const createNewResume = async () => {
+  const createNewResume = async (role: ResumeRole) => {
     setCreating(true);
     try {
-      const defaultContent: ResumeContent = {
+      const defaultContent: ResumeContent & { role?: ResumeRole } = {
         personalInfo: {
           fullName: '',
           email: user?.email || '',
@@ -84,6 +86,7 @@ const Dashboard = () => {
         experience: [],
         projects: [],
         skills: [],
+        role,
       };
 
       const { data, error } = await supabase
@@ -114,6 +117,14 @@ const Dashboard = () => {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleCreateClick = () => {
+    setRoleModalOpen(true);
+  };
+
+  const handleRoleSelect = (role: ResumeRole) => {
+    createNewResume(role);
   };
 
   const deleteResume = async (id: string) => {
@@ -153,7 +164,8 @@ const Dashboard = () => {
             </div>
             <span className="font-display text-xl font-bold text-foreground">ResumeAI</span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <span className="text-sm text-muted-foreground hidden sm:block">
               {user?.email}
             </span>
@@ -172,7 +184,7 @@ const Dashboard = () => {
             <h1 className="font-display text-3xl font-bold text-foreground">My Resumes</h1>
             <p className="text-muted-foreground">Manage and edit your resumes</p>
           </div>
-          <Button onClick={createNewResume} disabled={creating} size="lg">
+          <Button onClick={handleCreateClick} disabled={creating} size="lg">
             {creating ? (
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             ) : (
@@ -187,7 +199,7 @@ const Dashboard = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : resumes.length === 0 ? (
-          <Card className="text-center py-16">
+          <Card className="text-center py-16 animate-fade-in">
             <CardContent>
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent">
                 <FileText className="h-8 w-8 text-accent-foreground" />
@@ -198,7 +210,7 @@ const Dashboard = () => {
               <p className="mb-6 text-muted-foreground">
                 Create your first resume to get started
               </p>
-              <Button onClick={createNewResume} disabled={creating}>
+              <Button onClick={handleCreateClick} disabled={creating}>
                 {creating ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -210,10 +222,11 @@ const Dashboard = () => {
           </Card>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {resumes.map((resume) => (
+            {resumes.map((resume, index) => (
               <Card
                 key={resume.id}
-                className="group transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
+                className="group transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 animate-fade-in"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -273,6 +286,13 @@ const Dashboard = () => {
           </div>
         )}
       </main>
+
+      {/* Role Selector Modal */}
+      <RoleSelector
+        open={roleModalOpen}
+        onOpenChange={setRoleModalOpen}
+        onSelectRole={handleRoleSelect}
+      />
     </div>
   );
 };
