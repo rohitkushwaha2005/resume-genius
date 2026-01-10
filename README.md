@@ -1,73 +1,188 @@
-# Welcome to your Lovable project
+🧠 AI Resume Builder – Full Stack Web Application
 
-## Project info
+A modern, full-stack AI-powered Resume Builder that helps users create, analyze, and optimize professional resumes.
+The platform goes beyond basic resume generation by offering resume scoring, job-specific optimization, smart feedback, and dynamic UI, making it suitable for real-world use.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+🚀 Features
+🔐 Authentication
 
-## How can I edit this code?
+Secure user signup and login
 
-There are several ways of editing your application.
+Session persistence
 
-**Use Lovable**
+Protected routes for authenticated users
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Logout functionality
 
-Changes made via Lovable will be committed automatically to this repo.
+📄 Resume Builder
 
-**Use your preferred IDE**
+Create and manage multiple resumes
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Structured sections:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Personal Information
 
-Follow these steps:
+Education
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Work Experience
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Projects
 
-# Step 3: Install the necessary dependencies.
-npm i
+Skills
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Edit, update, and delete resumes
+
+🤖 AI-Powered Capabilities
+
+Professional resume summary generation
+
+Experience and project description enhancement
+
+Role-based skill suggestions
+
+Resume analysis with ATS score and feedback
+
+Smart content warnings (weak words, repetition, length issues)
+
+🎯 Job Description Optimizer
+
+Paste a job description
+
+Automatically tailor resume content to match the role
+
+Improves keyword relevance and job alignment
+
+📊 Resume Scoring & Feedback
+
+ATS compatibility score (0–100)
+
+Strengths and weaknesses analysis
+
+Actionable improvement suggestions
+
+🎨 UI & UX Enhancements
+
+Light and Dark mode
+
+Font switcher for resume preview
+
+Step-by-step progress indicator
+
+Responsive and modern design
+
+Clean, ATS-friendly resume layout
+
+📥 Export
+
+Download resume as a professionally formatted PDF
+
+🛠 Tech Stack
+Frontend
+
+React (Vite)
+
+Tailwind CSS
+
+React Router
+
+Context API
+
+Backend
+
+Node.js
+
+Express.js
+
+Database & Auth
+
+Supabase (Authentication & Data Storage)
+
+🧩 Project Structure
+src/
+ ├── components/
+ ├── pages/
+ │    ├── Login.jsx
+ │    ├── Signup.jsx
+ │    ├── Dashboard.jsx
+ │    ├── ResumeBuilder.jsx
+ ├── context/
+ │    ├── AuthContext.jsx
+ ├── services/
+ ├── utils/
+ ├── App.jsx
+
+server/
+ ├── routes/
+ ├── controllers/
+ ├── services/
+ ├── index.js
+
+🔄 Application Flow
+Landing Page
+   ↓
+Signup / Login
+   ↓
+Dashboard
+   ↓
+Create or Edit Resume
+   ↓
+AI Enhancement & Optimization
+   ↓
+Resume Preview
+   ↓
+Download PDF
+
+🧠 Why This Project Is Different
+
+Not just resume creation, but resume analysis and improvement
+
+Job-specific resume customization
+
+Real-time feedback and suggestions
+
+Designed like a real SaaS product, not a college demo
+
+Scalable and production-ready architecture
+
+💼 Use Cases
+
+Students and freshers creating professional resumes
+
+Job seekers optimizing resumes for specific roles
+
+Portfolio project for full-stack and AI-based applications
+
+📦 Installation & Setup
+# Clone the repository
+git clone <repository-url>
+
+# Frontend
+cd client
+npm install
 npm run dev
-```
 
-**Edit a file directly in GitHub**
+# Backend
+cd server
+npm install
+npm start
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
 
-**Use GitHub Codespaces**
+Add environment variables for authentication and database configuration before running the project.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+📈 Future Improvements
 
-## What technologies are used for this project?
+Resume version history
 
-This project is built with:
+Public shareable resume links
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Multi-language resume support
 
-## How can I deploy this project?
+Cover letter generation
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Recruiter feedback mode
 
-## Can I connect a custom domain to my Lovable project?
+👤 Author
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Rohit Kumar Kushwaha
+Bachelor’s in Computer Science
+Full Stack Developer
