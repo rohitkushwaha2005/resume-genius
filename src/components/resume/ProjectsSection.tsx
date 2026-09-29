@@ -30,7 +30,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
     onChange([...data, newProject]);
   };
 
-  const updateProject = (id: string, field: keyof Project, value: any) => {
+  const updateProject = <K extends keyof Project>(id: string, field: K, value: Project[K]) => {
     onChange(
       data.map((proj) => (proj.id === id ? { ...proj, [field]: value } : proj))
     );

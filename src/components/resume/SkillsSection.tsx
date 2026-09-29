@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus, Sparkles, Loader2, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { aiClient, errorMessage } from '@/lib/ai-client';
 
 interface SkillsSectionProps {
   data: string[];
@@ -47,38 +47,19 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
     setSuggesting(true);
 
     try {
-      const { data: result, error } = await supabase.functions.invoke('ai-enhance', {
-        body: {
-          type: 'suggest-skills',
-          context: { jobRole, existingSkills: data },
-        },
+      const result = await aiClient.suggestSkills(jobRole, data);
+      const newSkills = result.skills.filter((s) => !data.includes(s));
+      onChange([...data, ...newSkills]);
+      toast({
+        title: 'Skills suggested!',
+        description: `Added ${newSkills.length} new skills. Remove any you don't actually have.`,
       });
-
-      if (error) throw error;
-
-      if (result.skills && Array.isArray(result.skills)) {
-        const newSkills = result.skills.filter((s: string) => !data.includes(s));
-        onChange([...data, ...newSkills]);
-        toast({
-          title: 'Skills suggested!',
-          description: `Added ${newSkills.length} new skills based on your role.`,
-        });
-      }
-    } catch (error: any) {
-      console.error('AI suggest error:', error);
-      if (error.message?.includes('429')) {
-        toast({
-          title: 'Rate limit reached',
-          description: 'Please wait a moment before trying again.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Failed to suggest skills',
-          description: 'Unable to get suggestions. Please try again.',
-          variant: 'destructive',
-        });
-      }
+    } catch (error) {
+      toast({
+        title: 'Failed to suggest skills',
+        description: errorMessage(error),
+        variant: 'destructive',
+      });
     } finally {
       setSuggesting(false);
     }

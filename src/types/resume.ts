@@ -42,6 +42,8 @@ export interface ResumeContent {
   experience: Experience[];
   projects: Project[];
   skills: string[];
+  /** Target role chosen in the role selector. */
+  role?: string;
 }
 
 export interface Resume {

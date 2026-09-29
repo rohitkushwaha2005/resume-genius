@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { Resume, ResumeContent } from '@/types/resume';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +43,6 @@ const Builder = () => {
   const [resume, setResume] = useState<Resume | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [exporting, setExporting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState('personal');
   const [jdOptimizerOpen, setJdOptimizerOpen] = useState(false);
@@ -77,44 +78,66 @@ const Builder = () => {
     setHasChanges(true);
   };
 
-  const saveResume = async () => {
+  const latestResume = useRef<Resume | null>(null);
+  latestResume.current = resume;
+
+  const saveResume = useCallback(async ({ silent = false } = {}) => {
     if (!resume) return;
     setSaving(true);
     try {
-      const { error } = await supabase.from('resumes').update({ title: resume.title, content: resume.content as any }).eq('id', resume.id);
+      const { error } = await supabase
+        .from('resumes')
+        .update({ title: resume.title, content: resume.content as unknown as Json })
+        .eq('id', resume.id);
       if (error) throw error;
-      setHasChanges(false);
-      toast({ title: 'Saved!', description: 'Your resume has been saved.' });
+      // Only clear the flag if nothing changed while the request was in flight.
+      if (latestResume.current === resume) setHasChanges(false);
+      if (!silent) toast({ title: 'Saved!', description: 'Your resume has been saved.' });
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to save resume.', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
-  };
+  }, [resume, toast]);
 
-  const exportPDF = async () => {
-    setExporting(true);
-    try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      const element = document.getElementById('resume-preview');
-      if (!element) throw new Error('Preview not found');
-      await html2pdf().set({
-        margin: 0.5,
-        filename: `${resume?.title || 'resume'}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'in' as const, format: 'letter' as const, orientation: 'portrait' as const },
-      }).from(element).save();
-      toast({ title: 'PDF exported!', description: 'Your resume has been downloaded.' });
-    } catch (error) {
-      toast({ title: 'Export failed', description: 'Unable to export PDF.', variant: 'destructive' });
-    } finally {
-      setExporting(false);
-    }
+  // Autosave two seconds after the last edit.
+  useEffect(() => {
+    if (!hasChanges) return;
+    const timer = setTimeout(() => saveResume({ silent: true }), 2000);
+    return () => clearTimeout(timer);
+  }, [resume, hasChanges, saveResume]);
+
+  // Warn before closing the tab with unsaved edits.
+  useEffect(() => {
+    if (!hasChanges) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [hasChanges]);
+
+  /**
+   * Exports through the browser's print dialog ("Save as PDF"). Unlike canvas-based export, the
+   * PDF contains real, selectable text, so ATS systems can parse it. Print styles in index.css show
+   * only the #resume-print-root copy of the resume.
+   */
+  const exportPDF = () => {
+    toast({
+      title: 'Choose "Save as PDF"',
+      description: 'In the print dialog, set the destination to "Save as PDF".',
+    });
+    const previousTitle = document.title;
+    // Browsers suggest the page title as the PDF file name.
+    document.title = (resume?.title || 'Resume').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Resume';
+    const restore = () => {
+      document.title = previousTitle;
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+    setTimeout(() => window.print(), 300);
   };
 
   const handleRoleChange = (role: ResumeRole) => {
-    updateContent({ role } as any);
+    updateContent({ role });
   };
 
   if (loading) {
@@ -122,7 +145,7 @@ const Builder = () => {
   }
   if (!resume) return null;
 
-  const currentRole = (resume.content as any).role as ResumeRole | undefined;
+  const currentRole = resume.content.role as ResumeRole | undefined;
   const latestPosition = resume.content.experience?.[0]?.position;
 
   return (
@@ -154,11 +177,11 @@ const Builder = () => {
                 <div className="p-4"><div className="shadow-lg rounded-lg overflow-hidden border"><ResumePreview content={resume.content} title={resume.title} fontFamily={resumeFont} template={resumeTemplate} /></div></div>
               </SheetContent>
             </Sheet>
-            <Button variant="outline" size="sm" onClick={saveResume} disabled={saving || !hasChanges}>
-              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}Save
+            <Button variant="outline" size="sm" onClick={() => saveResume()} disabled={saving || !hasChanges} title={hasChanges ? 'Unsaved changes' : 'All changes saved'}>
+              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}{hasChanges ? 'Save' : 'Saved'}
             </Button>
-            <Button size="sm" onClick={exportPDF} disabled={exporting}>
-              {exporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}Export PDF
+            <Button size="sm" onClick={exportPDF} title="Download an ATS-readable PDF">
+              <Download className="h-4 w-4 mr-1" />Export PDF
             </Button>
           </div>
         </div>
@@ -203,6 +226,12 @@ const Builder = () => {
 
       <JDOptimizerFAB onClick={() => setJdOptimizerOpen(true)} />
       <JDOptimizer open={jdOptimizerOpen} onOpenChange={setJdOptimizerOpen} content={resume.content} onApply={updateContent} />
+      {createPortal(
+        <div id="resume-print-root" aria-hidden="true">
+          <ResumePreview content={resume.content} title={resume.title} fontFamily={resumeFont} template={resumeTemplate} />
+        </div>,
+        document.body,
+      )}
       <RoleSelector open={roleModalOpen} onOpenChange={setRoleModalOpen} onSelectRole={handleRoleChange} currentRole={currentRole} />
     </div>
   );

@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, Briefcase, Sparkles, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { aiClient, errorMessage } from '@/lib/ai-client';
 
 interface ExperienceSectionProps {
   data: Experience[];
@@ -36,7 +36,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
     onChange([...data, newExperience]);
   };
 
-  const updateExperience = (id: string, field: keyof Experience, value: any) => {
+  const updateExperience = <K extends keyof Experience>(id: string, field: K, value: Experience[K]) => {
     onChange(
       data.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
     );
@@ -87,39 +87,22 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
     setImprovingId(expId);
 
     try {
-      const { data: result, error } = await supabase.functions.invoke('ai-enhance', {
-        body: {
-          type: 'improve-experience',
-          content: bulletPoints,
-          context: { position: exp.position, company: exp.company },
-        },
+      const result = await aiClient.improveBullets({
+        position: exp.position,
+        company: exp.company,
+        bullets: exp.description.filter((b) => b.trim()),
       });
-
-      if (error) throw error;
-
-      if (result.improved) {
-        const improvedBullets = result.improved.split('\n').filter((b: string) => b.trim());
-        updateExperience(expId, 'description', improvedBullets);
-        toast({
-          title: 'Content improved!',
-          description: 'Your experience bullets have been enhanced.',
-        });
-      }
-    } catch (error: any) {
-      console.error('AI enhance error:', error);
-      if (error.message?.includes('429')) {
-        toast({
-          title: 'Rate limit reached',
-          description: 'Please wait a moment before trying again.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Failed to improve',
-          description: 'Unable to enhance content. Please try again.',
-          variant: 'destructive',
-        });
-      }
+      updateExperience(expId, 'description', result.bullets);
+      toast({
+        title: 'Content improved!',
+        description: 'Your experience bullets have been enhanced.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Failed to improve',
+        description: errorMessage(error),
+        variant: 'destructive',
+      });
     } finally {
       setImprovingId(null);
     }
@@ -204,7 +187,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
                         id={`current-${exp.id}`}
                         checked={exp.current}
                         onCheckedChange={(checked) =>
-                          updateExperience(exp.id, 'current', checked)
+                          updateExperience(exp.id, 'current', checked === true)
                         }
                       />
                       <Label htmlFor={`current-${exp.id}`}>Currently working here</Label>

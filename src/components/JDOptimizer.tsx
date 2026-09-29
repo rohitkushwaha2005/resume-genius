@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { supabase } from '@/integrations/supabase/client';
+import { aiClient, errorMessage } from '@/lib/ai-client';
+import { resumeToText } from '@/lib/ats-score';
+import { matchKeywords, type KeywordMatch } from '@/lib/text-match';
 import { useToast } from '@/hooks/use-toast';
 import { ResumeContent } from '@/types/resume';
 import {
@@ -35,6 +37,8 @@ interface OptimizedSection {
   label: string;
   original: string;
   optimized: string;
+  /** For the skills section, the list itself (so skills containing commas survive). */
+  skills?: string[];
   accepted: boolean;
 }
 
@@ -49,6 +53,7 @@ export const JDOptimizer: React.FC<JDOptimizerProps> = ({
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState<OptimizedSection[]>([]);
   const [step, setStep] = useState<'input' | 'review'>('input');
+  const [keywords, setKeywords] = useState<KeywordMatch | null>(null);
 
   const handleOptimize = async () => {
     if (!jobDescription.trim()) {
@@ -62,23 +67,9 @@ export const JDOptimizer: React.FC<JDOptimizerProps> = ({
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-enhance', {
-        body: {
-          type: 'optimize-for-jd',
-          content: jobDescription,
-          context: {
-            currentSummary: content.summary,
-            currentSkills: content.skills,
-            currentExperience: content.experience,
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      // Keyword coverage is computed locally with fixed rules; only the rewrite uses AI.
+      setKeywords(matchKeywords(jobDescription, resumeToText(content), content.skills));
+      const data = await aiClient.tailorToJob(jobDescription, content);
 
       const optimizedSections: OptimizedSection[] = [];
 
@@ -92,31 +83,26 @@ export const JDOptimizer: React.FC<JDOptimizerProps> = ({
         });
       }
 
-      if (data.skills && data.skills.length > 0) {
+      const skillsChanged =
+        data.skills.length > 0 &&
+        (data.skills.length !== content.skills.length || data.skills.some((s, i) => s !== content.skills[i]));
+      if (skillsChanged) {
         optimizedSections.push({
           id: 'skills',
-          label: 'Skills',
+          label: 'Skills (reordered by relevance)',
           original: content.skills.join(', ') || 'No skills',
           optimized: data.skills.join(', '),
+          skills: data.skills,
           accepted: true,
         });
-      }
-
-      if (optimizedSections.length === 0) {
-        toast({
-          title: 'No optimizations needed',
-          description: 'Your resume already aligns well with this job description!',
-        });
-        return;
       }
 
       setSections(optimizedSections);
       setStep('review');
     } catch (error) {
-      console.error('JD optimization error:', error);
       toast({
         title: 'Optimization failed',
-        description: 'Unable to optimize resume. Please try again.',
+        description: errorMessage(error),
         variant: 'destructive',
       });
     } finally {
@@ -138,7 +124,7 @@ export const JDOptimizer: React.FC<JDOptimizerProps> = ({
         if (section.id === 'summary') {
           updates.summary = section.optimized;
         } else if (section.id === 'skills') {
-          updates.skills = section.optimized.split(', ').map((s) => s.trim());
+          updates.skills = section.skills ?? [];
         }
       }
     });
@@ -157,6 +143,7 @@ export const JDOptimizer: React.FC<JDOptimizerProps> = ({
   const handleClose = () => {
     setJobDescription('');
     setSections([]);
+    setKeywords(null);
     setStep('input');
     onOpenChange(false);
   };
@@ -200,6 +187,12 @@ export const JDOptimizer: React.FC<JDOptimizerProps> = ({
           </div>
         ) : (
           <div className="space-y-4 mt-4">
+            {keywords && <KeywordReport match={keywords} />}
+            {sections.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                The AI had no changes to suggest for your summary or skills.
+              </p>
+            )}
             {sections.map((section) => (
               <div
                 key={section.id}
@@ -247,7 +240,7 @@ export const JDOptimizer: React.FC<JDOptimizerProps> = ({
               <Button variant="outline" onClick={() => setStep('input')}>
                 Back
               </Button>
-              <Button onClick={applyChanges} disabled={!sections.some((s) => s.accepted)}>
+              <Button onClick={applyChanges} disabled={!sections.some((s) => s.accepted)} className={cn(sections.length === 0 && 'hidden')}>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 Apply {sections.filter((s) => s.accepted).length} Changes
               </Button>
@@ -258,6 +251,42 @@ export const JDOptimizer: React.FC<JDOptimizerProps> = ({
     </Dialog>
   );
 };
+
+const KeywordReport: React.FC<{ match: KeywordMatch }> = ({ match }) => (
+  <div className="border rounded-lg p-4 space-y-3">
+    <div className="flex items-center justify-between">
+      <p className="font-medium text-sm">Keyword match</p>
+      <Badge variant="secondary">
+        {match.coverage === null ? 'No known keywords found' : `${match.coverage}% of job keywords`}
+      </Badge>
+    </div>
+    {match.matched.length > 0 && (
+      <div className="flex flex-wrap gap-1.5">
+        {match.matched.map((k) => (
+          <Badge key={k} variant="outline" className="border-green-500/50 text-green-700 dark:text-green-400">
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+            {k}
+          </Badge>
+        ))}
+      </div>
+    )}
+    {match.missing.length > 0 && (
+      <div className="space-y-1.5">
+        <div className="flex flex-wrap gap-1.5">
+          {match.missing.map((k) => (
+            <Badge key={k} variant="outline" className="border-destructive/50 text-destructive">
+              <X className="mr-1 h-3 w-3" />
+              {k}
+            </Badge>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Missing from your resume. Add a keyword only if you genuinely have that skill.
+        </p>
+      </div>
+    )}
+  </div>
+);
 
 // FAB Component
 export const JDOptimizerFAB: React.FC<{ onClick: () => void }> = ({ onClick }) => {

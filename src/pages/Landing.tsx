@@ -187,7 +187,7 @@ const Landing = () => {
             Ready to Build Your Resume?
           </h2>
           <p className="mb-8 text-lg text-muted-foreground">
-            Join thousands of job seekers who landed their dream jobs with ResumeAI.
+            Free to use. Build, score and tailor your resume, then export an ATS-readable PDF.
           </p>
           <Link to={user ? '/dashboard' : '/auth?mode=signup'}>
             <Button size="lg" className="h-14 px-8 text-lg shadow-glow">
@@ -209,7 +209,7 @@ const Landing = () => {
               <span className="font-display font-semibold text-foreground">ResumeAI</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2025 ResumeAI. All rights reserved.
+              © {new Date().getFullYear()} ResumeAI
             </p>
           </div>
         </div>
