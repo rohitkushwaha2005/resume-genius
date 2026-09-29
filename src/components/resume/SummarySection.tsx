@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sparkles, Loader2, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { aiClient, errorMessage } from '@/lib/ai-client';
 import { ResumeContent } from '@/types/resume';
 
 interface SummarySectionProps {
@@ -37,42 +37,18 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
     setGenerating(true);
 
     try {
-      const { data: result, error } = await supabase.functions.invoke('ai-enhance', {
-        body: {
-          type: 'generate-summary',
-          context: {
-            name: resumeContent.personalInfo.fullName,
-            position: latestExperience?.position || 'Professional',
-            skills: skills.slice(0, 10),
-            yearsExperience: resumeContent.experience?.length || 0,
-          },
-        },
+      const result = await aiClient.generateSummary(resumeContent);
+      onChange(result.summary);
+      toast({
+        title: 'Summary generated!',
+        description: 'Review it and make sure every claim is accurate.',
       });
-
-      if (error) throw error;
-
-      if (result.summary) {
-        onChange(result.summary);
-        toast({
-          title: 'Summary generated!',
-          description: 'Your professional summary has been created.',
-        });
-      }
-    } catch (error: any) {
-      console.error('AI generate error:', error);
-      if (error.message?.includes('429')) {
-        toast({
-          title: 'Rate limit reached',
-          description: 'Please wait a moment before trying again.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Failed to generate summary',
-          description: 'Unable to create summary. Please try again.',
-          variant: 'destructive',
-        });
-      }
+    } catch (error) {
+      toast({
+        title: 'Failed to generate summary',
+        description: errorMessage(error),
+        variant: 'destructive',
+      });
     } finally {
       setGenerating(false);
     }

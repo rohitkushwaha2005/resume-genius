@@ -1,6 +1,23 @@
 import { ResumeContent } from '@/types/resume';
 import { Mail, Phone, Linkedin, MapPin, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { safeHref } from '@/lib/safe-url';
+
+/**
+ * Project link rendered as visible text (not just an icon) so the URL survives in the exported
+ * PDF and ATS parsers can read it. Only http(s) links are rendered.
+ */
+const ProjectLink: React.FC<{ link?: string; className?: string }> = ({ link, className }) => {
+  const href = safeHref(link);
+  if (!href) return null;
+  const label = href.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={cn('inline-flex items-center gap-1 text-xs hover:underline break-all', className)}>
+      <ExternalLink className="h-3 w-3 shrink-0" />
+      {label}
+    </a>
+  );
+};
 
 export type ResumeTemplate = 'modern' | 'classic' | 'minimal';
 
@@ -76,7 +93,7 @@ const ModernTemplate: React.FC<{ content: ResumeContent; fontFamily: string }> =
               <div key={proj.id}>
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-gray-900">{proj.name}</h3>
-                  {proj.link && <a href={proj.link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline"><ExternalLink className="h-3 w-3" /></a>}
+                  <ProjectLink link={proj.link} className="text-indigo-600" />
                 </div>
                 {proj.description && <p className="text-gray-700 mt-1">{proj.description}</p>}
                 {proj.technologies.length > 0 && <p className="text-gray-500 text-xs mt-1"><span className="font-medium">Technologies:</span> {proj.technologies.join(', ')}</p>}
@@ -190,7 +207,7 @@ const ClassicTemplate: React.FC<{ content: ResumeContent; fontFamily: string }> 
               <div key={proj.id}>
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-gray-900">{proj.name}</h3>
-                  {proj.link && <a href={proj.link} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:underline text-xs">[Link]</a>}
+                  <ProjectLink link={proj.link} className="text-gray-600" />
                 </div>
                 {proj.description && <p className="text-gray-700">{proj.description}</p>}
                 {proj.technologies.length > 0 && <p className="text-gray-600 text-xs italic">Technologies: {proj.technologies.join(', ')}</p>}
@@ -264,7 +281,7 @@ const MinimalTemplate: React.FC<{ content: ResumeContent; fontFamily: string }> 
               <div key={proj.id}>
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-medium text-gray-900">{proj.name}</h3>
-                  {proj.link && <a href={proj.link} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-600"><ExternalLink className="h-3 w-3" /></a>}
+                  <ProjectLink link={proj.link} className="text-gray-500" />
                 </div>
                 {proj.description && <p className="text-gray-600">{proj.description}</p>}
                 {proj.technologies.length > 0 && <p className="text-gray-400 text-xs mt-1">{proj.technologies.join(' · ')}</p>}
@@ -312,11 +329,11 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({
 
   switch (template) {
     case 'classic':
-      return <div id="resume-preview"><ClassicTemplate content={content} fontFamily={fontStyle} /></div>;
+      return <div className="resume-page"><ClassicTemplate content={content} fontFamily={fontStyle} /></div>;
     case 'minimal':
-      return <div id="resume-preview"><MinimalTemplate content={content} fontFamily={fontStyle} /></div>;
+      return <div className="resume-page"><MinimalTemplate content={content} fontFamily={fontStyle} /></div>;
     case 'modern':
     default:
-      return <div id="resume-preview"><ModernTemplate content={content} fontFamily={fontStyle} /></div>;
+      return <div className="resume-page"><ModernTemplate content={content} fontFamily={fontStyle} /></div>;
   }
 };

@@ -178,3 +178,51 @@
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/*
+ * PDF export. The Builder renders a copy of the resume into #resume-print-root (a direct child of
+ * <body>). When printing, only that copy is shown, so "Save as PDF" produces a text-based PDF that
+ * ATS systems can read.
+ */
+#resume-print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 0.4in;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  body > *:not(#resume-print-root) {
+    display: none !important;
+  }
+
+  #resume-print-root {
+    display: block !important;
+  }
+
+  /* Page margins come from @page; drop the on-screen padding and fixed page height. */
+  #resume-print-root .resume-page > div {
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  #resume-print-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #resume-print-root h2,
+  #resume-print-root h3 {
+    break-after: avoid;
+  }
+
+  #resume-print-root li {
+    break-inside: avoid;
+  }
+}

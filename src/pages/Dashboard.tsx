@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { Resume, ResumeContent } from '@/types/resume';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,9 +53,9 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      const transformedResumes: Resume[] = (data || []).map((resume: any) => ({
+      const transformedResumes: Resume[] = (data || []).map((resume) => ({
         ...resume,
-        content: resume.content as ResumeContent,
+        content: resume.content as unknown as ResumeContent,
       }));
 
       setResumes(transformedResumes);
@@ -94,7 +95,7 @@ const Dashboard = () => {
         .insert({
           user_id: user?.id,
           title: 'Untitled Resume',
-          content: defaultContent as any,
+          content: defaultContent as unknown as Json,
         })
         .select()
         .single();

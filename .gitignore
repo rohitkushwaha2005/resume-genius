@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets (OPENAI_API_KEY etc.) live in .env.local, never in .env
+.env.local
+.env.*.local
+.vercel
